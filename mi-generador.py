@@ -5,32 +5,52 @@ FILENAME = 1
 CLIENTS_NUM = 2
 
 def main():
-    print(f'Generating {sys.argv[CLIENTS_NUM]} clients for {sys.argv[FILENAME]}')
+    fname = sys.argv[FILENAME]
 
-    with open(sys.argv[FILENAME], 'r') as file:
+    try:
+        file = open(fname, 'r')
+
+    except OSError:
+        print(f'Could not open/read file: {fname}') 
+        sys.exit(1)
+
+    with file:
         docker_compose_yaml = yaml.safe_load(file)
 
-    for i in range(2, int(sys.argv[CLIENTS_NUM]) + 1):
-        client_name = f'client{i}'
+        for i in range(2, int(sys.argv[CLIENTS_NUM]) + 1):
+            client_name = f'client{i}'
 
-        docker_compose_yaml['services'][client_name] = {
-            'container_name': f'{client_name}',
-            'image': 'client:latest',
-            'entrypoint': '/client',
-            'environment': [
-                f'CLI_ID={i}' ,
-                'CLI_LOG_LEVEL=DEBUG'
-            ],
-            'networks': [
-                'testing_net'
-            ],
-            'depends_on': [
-                'server'
-            ]
-        }
+            docker_compose_yaml['services'][client_name] = {
+                'container_name': f'{client_name}',
+                'image': 'client:latest',
+                'entrypoint': '/client',
+                'environment': [
+                    f'CLI_ID={i}' ,
+                    'CLI_LOG_LEVEL=DEBUG'
+                ],
+                'networks': [
+                    'testing_net'
+                ],
+                'depends_on': [
+                    'server'
+                ],
+                'volumes': [
+                    './client/config.yaml:/config.yaml'
+                ]
+            }
 
-    with open(sys.argv[FILENAME], 'w') as file:
+            file.close()
+
+    try:
+        file = open(fname, 'w')
+    
+    except OSError:
+        print(f'Could not open/read file: {fname}') 
+        sys.exit(1)
+
+    with file:
         yaml.dump(docker_compose_yaml, file)
+        file.close()
 
 main()
 
