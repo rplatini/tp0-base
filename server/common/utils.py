@@ -2,6 +2,7 @@ import csv
 import datetime
 import time
 
+DELIMITER = '|'
 
 """ Bets storage location. """
 STORAGE_FILEPATH = "./bets.csv"
@@ -48,4 +49,9 @@ def load_bets() -> list[Bet]:
         reader = csv.reader(file, quoting=csv.QUOTE_MINIMAL)
         for row in reader:
             yield Bet(row[0], row[1], row[2], row[3], row[4], row[5])
+
+
+def deserialize(bet: str) -> Bet:
+    splitted_bet = bet.split(DELIMITER)
+    return Bet(splitted_bet[0], splitted_bet[1], splitted_bet[2], splitted_bet[3], splitted_bet[4], splitted_bet[5])
 
