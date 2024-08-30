@@ -27,9 +27,9 @@ class Server:
 
         while self._running:
             client_sock = self.__accept_new_connection()
-            messageHandler = MessageHandler(client_sock, client_sock.getpeername())
 
             if client_sock:
+                messageHandler = MessageHandler(client_sock, client_sock.getpeername())
                 self.__handle_client_connection(messageHandler)  
         
     def __handle_client_connection(self, messageHandler: MessageHandler):
