@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 )
 
@@ -33,6 +34,8 @@ func (m *MessageHandler) sendMessage(msg []byte) error {
 		}
 		totalSent += n
 	}
+
+	fmt.Println("Total bytes sent: ", totalSent)
 	return nil
 }
 

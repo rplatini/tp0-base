@@ -36,8 +36,9 @@ class MessageHandler():
             size_bytes = self.socket.recv(HEADER_SIZE)
             if len(size_bytes) < HEADER_SIZE:
                 return None
-            
+                     
             size = int.from_bytes(size_bytes, byteorder='big')
+            print('Header size: ', size)
 
             msg = self.socket.recv(size).rstrip().decode('utf-8')
             return msg

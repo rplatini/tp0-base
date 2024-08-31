@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/csv"
 	"net"
 	"os"
 	"os/signal"
@@ -12,12 +13,15 @@ import (
 
 var log = logging.MustGetLogger("log")
 
+const BATCH_SIZE = 8000
+
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
 	ID            string
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
+	BatchAmount   int
 }
 
 // Client Entity that encapsulates how
@@ -53,8 +57,42 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) error {
+	batchMsg := []byte{}
+
+	for i := 0; i < c.config.BatchAmount; i++ {
+		line, err := reader.Read()
+	
+		if err != nil {
+			return err
+		}
+	
+		bet := NewBet(
+			c.config.ID,
+			line[0],
+			line[1],
+			line[2],
+			line[3],
+			line[4],
+		)
+
+		batchMsg = append(batchMsg, bet.serialize()...)
+	}
+
+	// log.Infof("msg: %s", batchMsg)
+
+	err := messageHandler.sendMessage([]byte(batchMsg))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
 // StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop(bet *Bet) {
+func (c *Client) StartClientLoop(reader *csv.Reader) {
 	sigChannel := make(chan os.Signal, 1)
    	signal.Notify(sigChannel, os.Interrupt, syscall.SIGTERM)
 
@@ -73,9 +111,8 @@ func (c *Client) StartClientLoop(bet *Bet) {
 	c.createClientSocket()
 	messageHandler := &MessageHandler{conn: c.conn}
 
-	msg := bet.serialize()
-	err := messageHandler.sendMessage(msg)
-
+	err := c.sendBets(reader, messageHandler)
+	
 	if err != nil {
 		log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
 			c.config.ID,
@@ -85,7 +122,7 @@ func (c *Client) StartClientLoop(bet *Bet) {
 		return
 	}
 
-	_, err = messageHandler.receiveMessage()
+	msg, err := messageHandler.receiveMessage()
 	c.conn.Close()
 
 	if err != nil {
@@ -96,7 +133,7 @@ func (c *Client) StartClientLoop(bet *Bet) {
 		return
 	}
 
-	log.Infof("action: apuesta_enviada | result: success | dni: ${%v} | numero: ${%v}", bet.documento, bet.numero)
+	log.Infof("action: apuesta_enviada | result: success | client_id: %v | confirmation: %s", c.config.ID, msg)
 }
 
 func (c *Client) signalHandler(signal os.Signal) {

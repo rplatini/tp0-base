@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 
-from common.utils import deserialize, store_bets
+from common.utils import deserialize, store_bets, load_bets
 from common.message_handler import MessageHandler
 
 ACK_MESSAGE = "ACK"
@@ -42,12 +42,12 @@ class Server:
         try:
             msg = messageHandler.receive_message()
 
-            logging.info(f'action: receive_message | result: success | ip: {messageHandler.get_address()} | msg: {msg}')
+            logging.info(f'action: receive_message | result: success | ip: {messageHandler.get_address()}')
 
-            bet = deserialize(msg)
-            store_bets([bet])
+            bets = deserialize(msg)
+            store_bets(bets)
 
-            logging.info(f'action: apuesta_almacenada | result: success | dni: ${bet.document} | numero: ${bet.number}')
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
 
             messageHandler.send_message(ACK_MESSAGE)
 

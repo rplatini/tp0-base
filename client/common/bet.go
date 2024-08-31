@@ -5,6 +5,7 @@ import (
 )
 
 const DELIMITER = "|"
+const END_OF_MESSAGE = "\n"
 
 type Bet struct {
 	agencia string
@@ -29,6 +30,7 @@ func NewBet(agencia string, nombre string, apellido string, documento string, na
 func (b *Bet) serialize() []byte {
 	dataFields := []string{b.agencia, b.nombre, b.apellido, b.documento, b.nacimiento, b.numero}
 	data := strings.Join(dataFields, DELIMITER)
+	data += END_OF_MESSAGE
 	
 	dataBytes := []byte(data)
 	return dataBytes
