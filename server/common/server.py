@@ -46,21 +46,18 @@ class Server:
             while not end_flag:
                 end_flag, msg = messageHandler.receive_message()
 
-                # logging.info(f'action: receive_message | result: success | ip: {messageHandler.get_address()}')
-
                 bets = deserialize(msg)
                 store_bets(bets)
 
                 logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
-                logging.info(f"End flag: {end_flag}")
 
-                # messageHandler.send_message(ACK_MESSAGE)
+            messageHandler.send_message(ACK_MESSAGE)
 
         except OSError:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
 
         except RuntimeError:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
 
         finally:
             messageHandler.close()

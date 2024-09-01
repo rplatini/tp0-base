@@ -67,7 +67,6 @@ func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) (
 	
 		if err != nil {
 			if err == io.EOF {
-				// log.Infof("Reached EOF")
 				eofReached = true
 				break
 			}
@@ -85,8 +84,6 @@ func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) (
 
 		batchMsg = append(batchMsg, bet.serialize()...)
 	}
-
-	// log.Infof("msg: %s", batchMsg)
 
 	err := messageHandler.sendMessage([]byte(batchMsg), eofReached)
 
@@ -132,9 +129,8 @@ func (c *Client) StartClientLoop(reader *csv.Reader) {
 			return
 		}
 	}
-	
 
-	msg, err := messageHandler.receiveMessage()
+	_, err := messageHandler.receiveMessage()
 	c.conn.Close()
 
 	if err != nil {
@@ -145,7 +141,7 @@ func (c *Client) StartClientLoop(reader *csv.Reader) {
 		return
 	}
 
-	log.Infof("action: apuesta_enviada | result: success | client_id: %v | confirmation: %s", c.config.ID, msg)
+	log.Infof("action: apuestas_enviadas | result: success | client_id: %v", c.config.ID)
 }
 
 func (c *Client) signalHandler(signal os.Signal) {

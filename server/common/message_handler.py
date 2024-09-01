@@ -39,7 +39,7 @@ class MessageHandler():
                 raise RuntimeError("Socket connection broken")
                      
             size = int.from_bytes(size_bytes, byteorder='big')
-            print('Total bytes received: ', size)
+            # print('Total bytes received: ', size)
 
             end_flag_bytes = self.socket.recv(FLAG_SIZE)
             if len(end_flag_bytes) < FLAG_SIZE:
