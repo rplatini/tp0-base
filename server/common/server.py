@@ -2,10 +2,12 @@ import socket
 import logging
 import signal
 
-from common.utils import deserialize, store_bets, load_bets
+from common.utils import deserialize, has_won, store_bets, load_bets
 from common.message_handler import MessageHandler
 
 ACK_MESSAGE = "ACK"
+DELIMITER = '|'
+AGENCIES = 2
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -14,6 +16,7 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._running = True
+        self.__finished_agencies = 0
         signal.signal(signal.SIGTERM, self.__graceful_shutdown)
 
     def run(self):
@@ -40,7 +43,6 @@ class Server:
         client socket will also be closed
         """
         try:
-
             end_flag = False
 
             while not end_flag:
@@ -49,9 +51,13 @@ class Server:
                 bets = deserialize(msg)
                 store_bets(bets)
 
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
+                # logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
+            
+            self.__finished_agencies +=1
 
-            messageHandler.send_message(ACK_MESSAGE)
+            while self.__finished_agencies != AGENCIES:
+                logging.info('action: sorteo | result: success')
+                self.__handle_winners(messageHandler)
 
         except OSError:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
@@ -90,3 +96,20 @@ class Server:
         logging.info("action: closing server socker | result: in_progress")
         self._server_socket.close()
         logging.info("action: shutdown | result: success")
+
+    def __handle_winners(self, messageHandler: MessageHandler):
+        _, winnersAsk = messageHandler.receive_message()
+        if not winnersAsk:
+            return
+        
+        agency = winnersAsk.split(DELIMITER)[1]
+
+        bets = load_bets()
+        winners = []
+
+        for bet in bets:
+            if bet.agency == int(agency) and has_won(bet):
+                winners.append(bet.document)
+        
+        winnersResponse = DELIMITER.join(winners)
+        messageHandler.send_message(winnersResponse)

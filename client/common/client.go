@@ -86,12 +86,7 @@ func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) (
 	}
 
 	err := messageHandler.sendMessage([]byte(batchMsg), eofReached)
-
-	if err != nil {
-		return eofReached, err
-	}
-
-	return eofReached, nil
+	return eofReached, err
 }
 
 
@@ -115,10 +110,8 @@ func (c *Client) StartClientLoop(reader *csv.Reader) {
 	c.createClientSocket()
 	messageHandler := &MessageHandler{conn: c.conn}
 
-	eofReached := false
-	for !eofReached {
-		var err error
-		eofReached, err = c.sendBets(reader, messageHandler)
+	for {
+		eofReached, err := c.sendBets(reader, messageHandler)
 
 		if err != nil {
 			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
@@ -127,6 +120,10 @@ func (c *Client) StartClientLoop(reader *csv.Reader) {
 			)
 			c.conn.Close()
 			return
+		}
+
+		if eofReached {
+			break
 		}
 	}
 
