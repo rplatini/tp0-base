@@ -40,16 +40,21 @@ class Server:
         client socket will also be closed
         """
         try:
-            msg = messageHandler.receive_message()
 
-            logging.info(f'action: receive_message | result: success | ip: {messageHandler.get_address()}')
+            end_flag = False
 
-            bets = deserialize(msg)
-            store_bets(bets)
+            while not end_flag:
+                end_flag, msg = messageHandler.receive_message()
 
-            logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
+                # logging.info(f'action: receive_message | result: success | ip: {messageHandler.get_address()}')
 
-            messageHandler.send_message(ACK_MESSAGE)
+                bets = deserialize(msg)
+                store_bets(bets)
+
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
+                logging.info(f"End flag: {end_flag}")
+
+                # messageHandler.send_message(ACK_MESSAGE)
 
         except OSError:
             logging.error("action: receive_message | result: fail | error: {e}")

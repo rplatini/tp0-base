@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/csv"
+	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -57,14 +58,20 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) error {
+func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) (bool, error) {
 	batchMsg := []byte{}
+	eofReached := false
 
 	for i := 0; i < c.config.BatchAmount; i++ {
 		line, err := reader.Read()
 	
 		if err != nil {
-			return err
+			if err == io.EOF {
+				// log.Infof("Reached EOF")
+				eofReached = true
+				break
+			}
+			return eofReached, err
 		}
 	
 		bet := NewBet(
@@ -81,13 +88,13 @@ func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) e
 
 	// log.Infof("msg: %s", batchMsg)
 
-	err := messageHandler.sendMessage([]byte(batchMsg))
+	err := messageHandler.sendMessage([]byte(batchMsg), eofReached)
 
 	if err != nil {
-		return err
+		return eofReached, err
 	}
 
-	return nil
+	return eofReached, nil
 }
 
 
@@ -111,16 +118,21 @@ func (c *Client) StartClientLoop(reader *csv.Reader) {
 	c.createClientSocket()
 	messageHandler := &MessageHandler{conn: c.conn}
 
-	err := c.sendBets(reader, messageHandler)
-	
-	if err != nil {
-		log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
-		c.conn.Close()
-		return
+	eofReached := false
+	for !eofReached {
+		var err error
+		eofReached, err = c.sendBets(reader, messageHandler)
+
+		if err != nil {
+			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
+				c.config.ID,
+				err,
+			)
+			c.conn.Close()
+			return
+		}
 	}
+	
 
 	msg, err := messageHandler.receiveMessage()
 	c.conn.Close()

@@ -18,14 +18,25 @@ func NewMessageHandler(conn net.Conn) *MessageHandler {
 	}
 }
 
-func (m *MessageHandler) sendMessage(msg []byte) error {
-	totalSent := 0
-	size := len(msg)
+func (m *MessageHandler) sendMessage(msg []byte, endFlag bool) error {
+	flag := int8(0)
+	if endFlag {
+		flag = 1
+	}
 
+	size := len(msg)
+	
 	err := binary.Write(m.conn, binary.BigEndian, int32(size))
     if err != nil {
-        return err
-    }
+		return err
+		}
+		
+	err = binary.Write(m.conn, binary.BigEndian, int8(flag))
+	if err != nil {
+		return err
+	}
+			
+	totalSent := 0
 
 	for totalSent < size {
 		n, err := m.conn.Write((msg[totalSent:]))
