@@ -25,8 +25,7 @@ def main():
                 'image': 'client:latest',
                 'entrypoint': '/client',
                 'environment': [
-                    f'CLI_ID={i}' ,
-                    'CLI_LOG_LEVEL=DEBUG'
+                    f'CLI_ID={i}'
                 ],
                 'networks': [
                     'testing_net'
@@ -35,7 +34,8 @@ def main():
                     'server'
                 ],
                 'volumes': [
-                    './client/config.yaml:/config.yaml'
+                    './client/config.yaml:/config.yaml',
+                    f'./.data/dataset/agency-{i}.csv:/agency.csv'
                 ]
             }
 
