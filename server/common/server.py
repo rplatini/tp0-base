@@ -82,7 +82,7 @@ class Server:
 
     
     def __graceful_shutdown(self, signum, _frame):
-        logging.debug(f"action: exit | signal: {signum} | result: in_progress")
+        logging.debug(f"action: exit | result: in_progress")
         self._running = False
 
         logging.debug("action: closing server socker | result: in_progress")
