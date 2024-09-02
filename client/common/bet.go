@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-const DELIMITER = "|"
+const DELIMITER = ","
 
 type Bet struct {
 	agencia string
