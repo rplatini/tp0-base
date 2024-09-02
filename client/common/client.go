@@ -71,7 +71,7 @@ func (c *Client) StartClientLoop() {
 		log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 		return
 	}
-	
+
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
@@ -84,7 +84,6 @@ func (c *Client) StartClientLoop() {
 			msgID,
 		)
 
-		log.Infof("action: send_message | result: success | client_id: %v | msg_id: %v", c.config.ID, msgID)
 		msg, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 
@@ -109,7 +108,6 @@ func (c *Client) StartClientLoop() {
 }
 
 func (c *Client) signalHandler(signal os.Signal) {
-	log.Infof("action: signal | result: received | signal: %v", signal)
 	c.running = false
 
 	if c.conn != nil {
