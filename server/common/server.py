@@ -7,7 +7,7 @@ from common.message_handler import MessageHandler
 
 ACK_MESSAGE = "ACK"
 DELIMITER = '|'
-AGENCIES = 2
+AGENCIES = 5
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -16,7 +16,7 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._running = True
-        self.__finished_agencies = 0
+        self._client_connections = {}
         signal.signal(signal.SIGTERM, self.__graceful_shutdown)
 
     def run(self):
@@ -33,7 +33,18 @@ class Server:
 
             if client_sock:
                 messageHandler = MessageHandler(client_sock, client_sock.getpeername())
-                self.__handle_client_connection(messageHandler)  
+                self._client_connections[messageHandler.get_address()] = messageHandler
+                self.__handle_client_connection(messageHandler) 
+
+    def __graceful_shutdown(self, signum, _frame):
+        logging.info(f"action: shutdown | signal: {signum} | result: in_progress")
+        self._running = False
+
+        logging.debug("action: closing connections | result: in_progress")
+        self._server_socket.close()
+        self.__close_client_connections()
+        logging.info("action: shutdown | result: success")
+ 
         
     def __handle_client_connection(self, messageHandler: MessageHandler):
         """
@@ -53,20 +64,16 @@ class Server:
 
                 # logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
             
-            self.__finished_agencies +=1
-
-            while self.__finished_agencies != AGENCIES:
-                logging.info('action: sorteo | result: success')
-                self.__handle_winners(messageHandler)
+            if len(self._client_connections) != AGENCIES:
+                return
+            
+            self.__start_lottery()
 
         except OSError:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
 
         except RuntimeError:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
-
-        finally:
-            messageHandler.close()
 
     def __accept_new_connection(self):
         """
@@ -87,15 +94,25 @@ class Server:
                 logging.error(f"action: accept_connections | result: fail | error: {e}")
             
             return None
+        
+    def __close_client_connections(self):
+        """
+        Close all client connections
 
-    
-    def __graceful_shutdown(self, signum, _frame):
-        logging.info(f"action: shutdown | signal: {signum} | result: in_progress")
-        self._running = False
+        Function iterates over all client connections and closes them
+        """
+        for client in self._client_connections.values():
+            client.close()
+        
+        self._client_connections.clear()
 
-        logging.info("action: closing server socker | result: in_progress")
-        self._server_socket.close()
-        logging.info("action: shutdown | result: success")
+    def __start_lottery(self):
+        logging.info('action: sorteo | result: success')
+
+        for client in self._client_connections.values():
+                self.__handle_winners(client)
+        
+        self.__close_client_connections()
 
     def __handle_winners(self, messageHandler: MessageHandler):
         _, winnersAsk = messageHandler.receive_message()
@@ -104,9 +121,9 @@ class Server:
         
         agency = winnersAsk.split(DELIMITER)[1]
 
-        bets = load_bets()
         winners = []
 
+        bets = load_bets()
         for bet in bets:
             if bet.agency == int(agency) and has_won(bet):
                 winners.append(bet.document)
