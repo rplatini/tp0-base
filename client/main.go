@@ -90,24 +90,6 @@ func PrintConfig(v *viper.Viper) {
 	)
 }
 
-func getBetInfo() *common.Bet {
-	bet := common.NewBet(
-		// os.Getenv("AGENCIA"),
-		// os.Getenv("NOMBRE"),
-		// os.Getenv("APELLIDO"),
-		// os.Getenv("DOCUMENTO"),
-		// os.Getenv("NACIMIENTO"),
-		// os.Getenv("NUMERO"),
-		"1",
-		"Santiago",
-		"Lorca",
-		"123456789",
-		"1990-01-01",
-		"25",
-	)
-	return bet
-}
-
 func main() {
 	v, err := InitConfig()
 	if err != nil {
@@ -130,6 +112,6 @@ func main() {
 
 	client := common.NewClient(clientConfig)
 
-	bet := getBetInfo()
-	client.StartClientLoop(bet)
+	// bet := getBetInfo()
+	client.StartClientLoop()
 }
