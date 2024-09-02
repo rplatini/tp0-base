@@ -104,8 +104,8 @@ func (c *Client) signalHandler(signal os.Signal) {
 	c.running = false
 
 	if c.conn != nil {
-		log.Infof("action: closing client socket | result: in_progress | client_id: %v", c.config.ID)
+		log.Debugf("action: exit | result: in_progress | client_id: %v", c.config.ID)
 		c.conn.Close()
-		log.Infof("action: closing client socket | result: success | client_id: %v", c.config.ID)
+		log.Debugf("action: exit | result: success | client_id: %v", c.config.ID)
 	}
 }
