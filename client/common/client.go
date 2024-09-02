@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -14,7 +15,13 @@ import (
 
 var log = logging.MustGetLogger("log")
 
-const BATCH_SIZE = 8000
+const EMPTY = ""
+
+const NOMBRE = 0
+const APELLIDO = 1
+const DOCUMENTO = 2
+const NACIMIENTO = 3
+const NUMERO = 4
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
@@ -75,11 +82,11 @@ func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) (
 	
 		bet := NewBet(
 			c.config.ID,
-			line[0],
-			line[1],
-			line[2],
-			line[3],
-			line[4],
+			line[NOMBRE],
+			line[APELLIDO],
+			line[DOCUMENTO],
+			line[NACIMIENTO],
+			line[NUMERO],
 		)
 
 		batchMsg = append(batchMsg, bet.serialize()...)
@@ -87,6 +94,27 @@ func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) (
 
 	err := messageHandler.sendMessage([]byte(batchMsg), eofReached)
 	return eofReached, err
+}
+
+func (c *Client) AskForWinners(messageHandler *MessageHandler) (int, error) {
+	winnersAsk := "WINNERS" + DELIMITER + c.config.ID
+
+
+	err := messageHandler.sendMessage([]byte(winnersAsk), true)
+	if err == nil {
+		winners, err := messageHandler.receiveMessage()
+		// log.Debugf("DNI winners: %v", winners)
+
+		if err == nil {
+			winnersCount := 0
+			if winners != EMPTY {
+				winnersCount = len(strings.Split(winners, DELIMITER))
+			}
+			return winnersCount, err
+		}
+	}
+		
+	return -1, err
 }
 
 
@@ -127,18 +155,18 @@ func (c *Client) StartClientLoop(reader *csv.Reader) {
 		}
 	}
 
-	_, err := messageHandler.receiveMessage()
+	dniWinners, err := c.AskForWinners(messageHandler)
 	c.conn.Close()
 
 	if err != nil {
-		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+		log.Errorf("action: consulta_ganadores | result: fail | client_id: %v | error: %v",
 			c.config.ID,
 			err,
 		)
 		return
 	}
 
-	log.Infof("action: apuestas_enviadas | result: success | client_id: %v", c.config.ID)
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: ${%d}", dniWinners)
 }
 
 func (c *Client) signalHandler(signal os.Signal) {
