@@ -76,8 +76,8 @@ class Server:
             return None
 
     
-    def __graceful_shutdown(self, signum, _frame):
-        logging.debug(f"action: exit | result: in_progress")
+    def __graceful_shutdown(self):
+        logging.debug(f"action: shutdown | result: in_progress")
         self._running = False
 
         logging.debug("action: closing server socket | result: in_progress")

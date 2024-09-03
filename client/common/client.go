@@ -111,11 +111,10 @@ func (c *Client) StartClientLoop() {
 }
 
 func (c *Client) signalHandler(signal os.Signal) {
-	log.Debugf("action: exit | result: in_progress | client_id: %v", c.config.ID)
 	c.running = false
 
 	if c.conn != nil {
-		log.Debugf("action: exit | result: in_progress | client_id: %v", c.config.ID)
+		log.Debugf("action: close_connections | result: in_progress | client_id: %v", c.config.ID)
 		c.conn.Close()
 		log.Debugf("action: exit | result: success | client_id: %v", c.config.ID)
 	}
