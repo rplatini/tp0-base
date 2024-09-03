@@ -50,6 +50,7 @@ func (c *Client) createClientSocket() error {
 			c.config.ID,
 			err,
 		)
+		return err
 	}
 	c.conn = conn
 	return nil
@@ -66,15 +67,17 @@ func (c *Client) StartClientLoop() {
 			c.signalHandler(s)
 		} 
 	}()
-	
-	if !c.running {
-		log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
-		return
-	}
 
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+		if !c.running {
+			log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+			return
+		}
+
 		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
+		if err := c.createClientSocket(); err != nil {
+			return
+		}
 
 		// TODO: Modify the send to avoid short-write
 		fmt.Fprintf(
@@ -108,6 +111,7 @@ func (c *Client) StartClientLoop() {
 }
 
 func (c *Client) signalHandler(signal os.Signal) {
+	log.Debugf("action: exit | result: in_progress | client_id: %v", c.config.ID)
 	c.running = false
 
 	if c.conn != nil {
