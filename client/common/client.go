@@ -100,7 +100,6 @@ func (c * Client) sendBets(reader *csv.Reader, messageHandler *MessageHandler) (
 func (c *Client) AskForWinners(messageHandler *MessageHandler) (int, error) {
 	winnersAsk := "WINNERS" + DELIMITER + c.config.ID
 
-
 	err := messageHandler.sendMessage([]byte(winnersAsk), true)
 	if err == nil {
 		winners, err := messageHandler.receiveMessage()

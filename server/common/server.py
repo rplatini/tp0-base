@@ -61,7 +61,7 @@ class Server:
                 bets = deserialize(msg)
                 store_bets(bets)
 
-                # logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
             
             if len(self._client_connections) != AGENCIES:
                 return
