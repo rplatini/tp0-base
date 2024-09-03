@@ -40,7 +40,6 @@ class Server:
         client socket will also be closed
         """
         try:
-
             end_flag = False
 
             while not end_flag:
@@ -83,10 +82,10 @@ class Server:
             return None
 
     
-    def __graceful_shutdown(self, signum, _frame):
-        logging.info(f"action: shutdown | signal: {signum} | result: in_progress")
+    def __graceful_shutdown(self, _signum, _frame):
+        logging.debug(f"action: shutdown | result: in_progress")
         self._running = False
 
-        logging.info("action: closing server socker | result: in_progress")
+        logging.debug("action: closing server socket | result: in_progress")
         self._server_socket.close()
-        logging.info("action: shutdown | result: success")
+        logging.debug("action: exit | result: success")
