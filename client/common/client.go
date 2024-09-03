@@ -48,6 +48,7 @@ func (c *Client) createClientSocket() error {
 			c.config.ID,
 			err,
 		)
+		return err
 	}
 	c.conn = conn
 	return nil
@@ -70,7 +71,9 @@ func (c *Client) StartClientLoop(bet *Bet) {
 		return
 	}
 
-	c.createClientSocket()
+	if err := c.createClientSocket(); err != nil {
+		return
+	}
 	messageHandler := &MessageHandler{conn: c.conn}
 
 	msg := bet.serialize()
@@ -100,12 +103,11 @@ func (c *Client) StartClientLoop(bet *Bet) {
 }
 
 func (c *Client) signalHandler(signal os.Signal) {
-	log.Infof("action: signal | result: received | signal: %v", signal)
 	c.running = false
 
 	if c.conn != nil {
-		log.Infof("action: closing client socket | result: in_progress | client_id: %v", c.config.ID)
+		log.Debugf("action: close_connections | result: in_progress | client_id: %v", c.config.ID)
 		c.conn.Close()
-		log.Infof("action: closing client socket | result: success | client_id: %v", c.config.ID)
+		log.Debugf("action: exit | result: success | client_id: %v", c.config.ID)
 	}
 }

@@ -2,7 +2,7 @@ import csv
 import datetime
 import time
 
-DELIMITER = '|'
+DELIMITER = ','
 
 """ Bets storage location. """
 STORAGE_FILEPATH = "./bets.csv"
