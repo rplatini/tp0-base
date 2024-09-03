@@ -1,11 +1,12 @@
+from multiprocessing import Process, Lock, Pipe
 import socket
 import logging
 import signal
+import os
 
 from common.utils import deserialize, has_won, store_bets, load_bets
 from common.message_handler import MessageHandler
 
-ACK_MESSAGE = "ACK"
 DELIMITER = ','
 AGENCIES = 5
 
@@ -17,35 +18,82 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self._running = True
         self._client_connections = {}
+        self._processes = []
+        self.__store_bet_lock = Lock()
+
         signal.signal(signal.SIGTERM, self.__graceful_shutdown)
 
     def run(self):
         """
         Dummy Server loop
-
         Server that accept a new connections and establishes a
         communication with a client. After client with communucation
         finishes, servers starts to accept new connections again
         """
+        # create channel to check if all bets are received
+        reader, sender = Pipe()
+
+        self.__spawn_process(self.__check_all_bets_received, (sender,))
 
         while self._running:
             client_sock = self.__accept_new_connection()
 
-            if client_sock:
-                messageHandler = MessageHandler(client_sock, client_sock.getpeername())
-                self._client_connections[messageHandler.get_address()] = messageHandler
-                self.__handle_client_connection(messageHandler) 
+            if not client_sock:
+                continue
+
+            messageHandler = MessageHandler(client_sock, client_sock.getpeername())
+            self._client_connections[messageHandler.get_address()] = messageHandler
+
+            self.__spawn_process(self.__handle_client_connection, (messageHandler, reader))
+
+            # if len(self._client_connections) == AGENCIES:
+            #     logging.info('All agencies connected')
+            #     self.__start_lottery()
+            #     self.__close_client_connections()
+            
+            self.__join_finished_processes()
+            self.__close_client_connections()
+    
+    def __spawn_process(self, target, args):
+        process = Process(target=target, args=args)
+        self._processes.append(process)
+        process.start()
+
+        logging.debug(f"action: start_process | result: success | pid:[{process.pid}]")
+
+    
+    def __check_all_bets_received(self, sender):
+        while len(self._client_connections) < AGENCIES:
+            pass
+
+        logging.debug("All bets are received")
+        sender.send("START_LOTTERY")
+
+
+    def __join_finished_processes(self):
+        for process in self._processes:
+            process.join()
+
+            logging.debug(f"action: join_process | result: success | pid:[{process.pid}]")
+
+        self._processes.clear()
+
 
     def __graceful_shutdown(self, _signum, _frame):
         logging.debug(f"action: shutdown | result: in_progress")
         self._running = False
 
-        logging.debug("action: closing server socket | result: in_progress")
         self._server_socket.close()
-        logging.debug("action: exit | result: success")
- 
+        logging.debug("action: closing server socket | result: success")
+
+        self.__close_client_connections()
+        logging.debug("action: closing client connections | result: success")
+
+        self.__join_finished_processes()
         
-    def __handle_client_connection(self, messageHandler: MessageHandler):
+        logging.debug("action: exit | result: success")
+        
+    def __handle_client_connection(self, messageHandler: MessageHandler, reader):
         """
         Read message from a specific client socket and closes the socket
 
@@ -54,25 +102,23 @@ class Server:
         """
         try:
             end_flag = False
-
             while not end_flag:
                 end_flag, msg = messageHandler.receive_message()
-
                 bets = deserialize(msg)
-                store_bets(bets)
 
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
-            
-            if len(self._client_connections) != AGENCIES:
-                return
-            
-            self.__start_lottery()
+                with self.__store_bet_lock:
+                    store_bets(bets)
 
-        except OSError:
+                # logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
+        except Exception as e:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
+        
+        logging.debug('action: all_bets_received | result: success')
 
-        except RuntimeError:
-            logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
+        lottery_signal = reader.recv()
+        if lottery_signal == "START_LOTTERY":
+            self.__handle_winners(messageHandler)
+            
 
     def __accept_new_connection(self):
         """
@@ -110,22 +156,27 @@ class Server:
 
         for client in self._client_connections.values():
                 self.__handle_winners(client)
-        
-        self.__close_client_connections()
+    
 
     def __handle_winners(self, messageHandler: MessageHandler):
-        _, winnersAsk = messageHandler.receive_message()
-        if not winnersAsk:
-            return
+        try:
+            _, winnersAsk = messageHandler.receive_message()
+            if not winnersAsk:
+                return
         
-        agency = winnersAsk.split(DELIMITER)[1]
+            agency = int(winnersAsk.split(DELIMITER)[1])
+            winners = []
 
-        winners = []
+            bets = load_bets()
 
-        bets = load_bets()
-        for bet in bets:
-            if bet.agency == int(agency) and has_won(bet):
-                winners.append(bet.document)
-        
-        winnersResponse = DELIMITER.join(winners)
-        messageHandler.send_message(winnersResponse)
+            for bet in bets:
+                if bet.agency == agency and has_won(bet):
+                    winners.append(bet.document)
+            
+            winnersResponse = DELIMITER.join(winners)
+            messageHandler.send_message(winnersResponse)
+
+            logging.debug(f'action: send_winners | result: success | Agency [{agency}] Dni winners: {winnersResponse}')
+
+        except Exception as e:
+            logging.error(f'action: send_winners | result: fail | error: {e}')
