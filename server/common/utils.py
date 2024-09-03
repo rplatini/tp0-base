@@ -2,7 +2,7 @@ import csv
 import datetime
 import time
 
-DELIMITER = '|'
+DELIMITER = ','
 END_OF_BET = '\n'
 
 """ Bets storage location. """

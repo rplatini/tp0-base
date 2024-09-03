@@ -6,7 +6,7 @@ from common.utils import deserialize, has_won, store_bets, load_bets
 from common.message_handler import MessageHandler
 
 ACK_MESSAGE = "ACK"
-DELIMITER = '|'
+DELIMITER = ','
 AGENCIES = 5
 
 class Server:
@@ -36,14 +36,13 @@ class Server:
                 self._client_connections[messageHandler.get_address()] = messageHandler
                 self.__handle_client_connection(messageHandler) 
 
-    def __graceful_shutdown(self, signum, _frame):
-        logging.info(f"action: shutdown | signal: {signum} | result: in_progress")
+    def __graceful_shutdown(self, _signum, _frame):
+        logging.debug(f"action: shutdown | result: in_progress")
         self._running = False
 
-        logging.debug("action: closing connections | result: in_progress")
+        logging.debug("action: closing server socket | result: in_progress")
         self._server_socket.close()
-        self.__close_client_connections()
-        logging.info("action: shutdown | result: success")
+        logging.debug("action: exit | result: success")
  
         
     def __handle_client_connection(self, messageHandler: MessageHandler):

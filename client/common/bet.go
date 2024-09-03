@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-const DELIMITER = "|"
+const DELIMITER = ","
 const END_OF_MESSAGE = "\n"
 
 type Bet struct {
