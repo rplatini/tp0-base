@@ -47,6 +47,9 @@ class Server:
                 self.__close_client_connections()
     
     def __spawn_process(self, target, args):
+        """
+        Spawn a new process with the target function and args
+        """
         process = Process(target=target, args=args)
         self._processes.append(process)
         process.start()
@@ -54,6 +57,10 @@ class Server:
         logging.debug(f"action: start_process | result: success | pid:[{process.pid}]")
 
     def __join_finished_processes(self):
+        """
+        Waits until all processes have finished and joins them to the main process. 
+        The processes saved in the _processes list are removed after joining them.
+        """
         for process in self._processes:
             process.join()
 
@@ -63,6 +70,9 @@ class Server:
 
 
     def __graceful_shutdown(self, _signum, _frame):
+        """
+        Graceful shutdown of the server
+        """
         logging.debug(f"action: shutdown | result: in_progress")
         self._running = False
 
@@ -74,7 +84,7 @@ class Server:
 
         self.__join_finished_processes()
         
-        logging.debug("action: exit | result: success")
+        logging.info("action: exit | result: success")
         
     def __handle_client_connection(self, messageHandler: MessageHandler):
         """
@@ -92,7 +102,7 @@ class Server:
                 with self.__store_bet_lock:
                     store_bets(bets)
 
-                # logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
         except Exception as e:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
         
