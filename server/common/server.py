@@ -37,7 +37,8 @@ class Server:
                 self.__handle_client_connection(messageHandler)
 
                 if len(self._client_connections) == AGENCIES:
-                    self.__start_lottery() 
+                    self.__start_lottery()
+                    self.__close_client_connections() 
 
     def __graceful_shutdown(self, _signum, _frame):
         logging.debug(f"action: shutdown | result: in_progress")
@@ -64,7 +65,7 @@ class Server:
                 bets = deserialize(msg)
                 store_bets(bets)
 
-                # logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
 
         except OSError:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
