@@ -34,7 +34,10 @@ class Server:
             if client_sock:
                 messageHandler = MessageHandler(client_sock, client_sock.getpeername())
                 self._client_connections[messageHandler.get_address()] = messageHandler
-                self.__handle_client_connection(messageHandler) 
+                self.__handle_client_connection(messageHandler)
+
+                if len(self._client_connections) == AGENCIES:
+                    self.__start_lottery() 
 
     def __graceful_shutdown(self, _signum, _frame):
         logging.debug(f"action: shutdown | result: in_progress")
@@ -61,12 +64,7 @@ class Server:
                 bets = deserialize(msg)
                 store_bets(bets)
 
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
-            
-            if len(self._client_connections) != AGENCIES:
-                return
-            
-            self.__start_lottery()
+                # logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
 
         except OSError:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
@@ -106,26 +104,32 @@ class Server:
         self._client_connections.clear()
 
     def __start_lottery(self):
+        winners = {}
+        bets = load_bets()
+
+        for bet in bets:
+            if bet.agency not in winners:
+                    winners[bet.agency] = []
+            if has_won(bet):
+                winners[bet.agency].append(bet.document)
+
         logging.info('action: sorteo | result: success')
 
         for client in self._client_connections.values():
-                self.__handle_winners(client)
-        
-        self.__close_client_connections()
+                self.__send_winners(client, winners)
 
-    def __handle_winners(self, messageHandler: MessageHandler):
-        _, winnersAsk = messageHandler.receive_message()
-        if not winnersAsk:
-            return
+    def __send_winners(self, messageHandler: MessageHandler, winners: dict):
+        try:
+            _, winnersAsk = messageHandler.receive_message()
+            if not winnersAsk:
+                return
         
-        agency = winnersAsk.split(DELIMITER)[1]
+            agency = int(winnersAsk.split(DELIMITER)[1])
+            
+            winnersResponse = DELIMITER.join(winners[agency])
+            messageHandler.send_message(winnersResponse)
 
-        winners = []
+            logging.debug(f'action: send_winners | result: success | Agency [{agency}] Dni winners: {winnersResponse}')
 
-        bets = load_bets()
-        for bet in bets:
-            if bet.agency == int(agency) and has_won(bet):
-                winners.append(bet.document)
-        
-        winnersResponse = DELIMITER.join(winners)
-        messageHandler.send_message(winnersResponse)
+        except Exception as e:
+            logging.error(f'action: send_winners | result: fail | error: {e}')
