@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"encoding/csv"
 	"os"
 	"strings"
 	"time"
@@ -114,12 +113,5 @@ func main() {
 	}
 
 	client := common.NewClient(clientConfig)
-
-	file, err := os.OpenFile("./agency.csv", os.O_APPEND|os.O_CREATE|os.O_RDONLY, 0777)
-    if err != nil {
-        log.Errorf("Error opening file: %v", err)
-    }
-
-	reader := csv.NewReader(file)
-	client.StartClientLoop(reader)
+	client.StartClientLoop()
 }
