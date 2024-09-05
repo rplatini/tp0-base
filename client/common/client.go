@@ -102,7 +102,7 @@ func (c *Client) AskForWinners(messageHandler *MessageHandler) (int, error) {
 
 	err := messageHandler.sendMessage([]byte(winnersAsk), true)
 	if err == nil {
-		winners, err := messageHandler.receiveMessage()
+		winners, _, err := messageHandler.receiveMessage()
 		// log.Debugf("DNI winners: %v", winners)
 
 		if err == nil {
