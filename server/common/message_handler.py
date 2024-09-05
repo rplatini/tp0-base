@@ -9,12 +9,14 @@ class MessageHandler():
     def get_address(self):
         return self.addr[0]
 
-    def send_message(self, msg):
+    def send_message(self, msg, end_flag):
         try:
             msg_bytes = msg.encode('utf-8')
 
             size_bytes = len(msg_bytes).to_bytes(PACKET_SIZE, byteorder='big')
-            full_message = size_bytes + msg_bytes
+            end_flag = end_flag.to_bytes(FLAG_SIZE, byteorder='big')
+
+            full_message = size_bytes + end_flag + msg_bytes
 
             total_size = len(full_message)
             total_sent = 0
@@ -34,20 +36,10 @@ class MessageHandler():
 
     def receive_message(self) -> (bool, str):
         try:
-            size_bytes = self.socket.recv(PACKET_SIZE)
-            if len(size_bytes) < PACKET_SIZE:
-                raise RuntimeError("Socket connection broken")
-                     
-            size = int.from_bytes(size_bytes, byteorder='big')
-            # print('Total bytes received: ', size)
+            size = self.read_message(PACKET_SIZE, header=True)  
+            end_flag = self.read_message(FLAG_SIZE, header=True)
 
-            end_flag_bytes = self.socket.recv(FLAG_SIZE)
-            if len(end_flag_bytes) < FLAG_SIZE:
-                raise RuntimeError("Socket connection broken")
-            
-            end_flag = int.from_bytes(end_flag_bytes, byteorder='big')
-
-            msg = self.read_message(size)
+            msg = self.read_message(int(size))
             if msg is None:
                 return False, "Error: Message read failed."
 
@@ -56,7 +48,7 @@ class MessageHandler():
         except OSError as e:
             return e
         
-    def read_message(self, size):
+    def read_message(self, size, header=False):
         full_message = self.socket.recv(size)
         totalRead = len(full_message)
 
@@ -65,6 +57,9 @@ class MessageHandler():
             full_message += msg
             totalRead += len(msg)
 
+        if header:
+            return int.from_bytes(full_message, byteorder='big')
+        
         return full_message.rstrip().decode('utf-8')
         
     def close(self):

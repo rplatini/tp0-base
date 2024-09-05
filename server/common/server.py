@@ -165,7 +165,7 @@ class Server:
             agency = int(winnersAsk.split(DELIMITER)[1])
             
             winnersResponse = DELIMITER.join(winners[agency])
-            messageHandler.send_message(winnersResponse)
+            messageHandler.send_message(winnersResponse, True)
 
             logging.debug(f'action: send_winners | result: success | Agency [{agency}] Dni winners: {winnersResponse}')
 
