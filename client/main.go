@@ -92,7 +92,7 @@ func PrintConfig(v *viper.Viper) {
 
 func getBetInfo() *common.Bet {
 	bet := common.NewBet(
-		os.Getenv("AGENCIA"),
+		os.Getenv("CLI_ID"),
 		os.Getenv("NOMBRE"),
 		os.Getenv("APELLIDO"),
 		os.Getenv("DOCUMENTO"),
