@@ -50,14 +50,10 @@ class Server:
 
                 logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
 
-            messageHandler.send_message(ACK_MESSAGE)
+            messageHandler.send_message(ACK_MESSAGE, True)
 
         except OSError:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
-
-        except RuntimeError:
-            logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
-
         finally:
             messageHandler.close()
 

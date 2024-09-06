@@ -158,7 +158,7 @@ func (c *Client) StartClientLoop() {
 		}
 	}
 
-	if _, err := messageHandler.receiveMessage() ; err != nil {
+	if _,_, err := messageHandler.receiveMessage() ; err != nil {
 		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 			c.config.ID,
 			err,
