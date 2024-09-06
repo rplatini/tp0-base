@@ -6,6 +6,7 @@ import (
 )
 
 const PACKET_SIZE = 4
+const FLAG_SIZE = 1
 
 type MessageHandler struct {
 	conn net.Conn
@@ -56,35 +57,36 @@ func (m *MessageHandler) sendMessage(msg []byte, endFlag bool) error {
 	return nil
 }
 
-func (m *MessageHandler) readHeader() (uint32, error) {
-	buf := make([]byte, PACKET_SIZE)
-
-	n, err := m.conn.Read(buf[:PACKET_SIZE])
+func (m *MessageHandler) receiveMessage() (string, int8, error) {
+	size_bytes, err := m.readMessage(PACKET_SIZE)
 	if err != nil {
-		return 0, err
+		return "", 0, err
 	}
 
-	size := binary.BigEndian.Uint32(buf[:n])
-	return size, nil
+	size := int32(binary.BigEndian.Uint32(size_bytes))
+
+	flag_bytes, err := m.readMessage(FLAG_SIZE)
+	if err != nil {
+		return "",0, err
+	}
+	flag := int8(flag_bytes[0])
+
+	msg, err := m.readMessage(size)
+	return string(msg), flag, err
 }
 
-func (m *MessageHandler) receiveMessage() (string, error) {
-	size, err := m.readHeader()
-	if err != nil {
-		return "", err
-	}
-
+func (m *MessageHandler) readMessage(size int32) ([]byte, error) {
 	buf := make([]byte, size)
 	totalRead := 0
 
-	for uint32(totalRead) < size {
+	for int32(totalRead) < size {
 		n, err := m.conn.Read(buf[totalRead:])
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		totalRead += n
 	}
-	return string(buf), nil
+	return buf, nil
 }
 
 func (m *MessageHandler) close() {

@@ -5,7 +5,6 @@ import signal
 from common.utils import deserialize, has_won, store_bets, load_bets
 from common.message_handler import MessageHandler
 
-ACK_MESSAGE = "ACK"
 DELIMITER = ','
 AGENCIES = 5
 
@@ -22,7 +21,6 @@ class Server:
     def run(self):
         """
         Dummy Server loop
-
         Server that accept a new connections and establishes a
         communication with a client. After client with communucation
         finishes, servers starts to accept new connections again
@@ -41,10 +39,12 @@ class Server:
                     self.__close_client_connections() 
 
     def __graceful_shutdown(self, _signum, _frame):
+        """
+        Graceful shutdown of the server
+        """
         logging.debug(f"action: shutdown | result: in_progress")
         self._running = False
 
-        logging.debug("action: closing server socket | result: in_progress")
         self._server_socket.close()
         logging.debug("action: exit | result: success")
  
@@ -68,9 +68,6 @@ class Server:
                 logging.info(f'action: apuesta_recibida | result: success | cantidad: ${len(bets)}')
 
         except OSError:
-            logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
-
-        except RuntimeError:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: ${len(bets)}')
 
     def __accept_new_connection(self):
@@ -118,6 +115,7 @@ class Server:
 
         for client in self._client_connections.values():
                 self.__send_winners(client, winners)
+    
 
     def __send_winners(self, messageHandler: MessageHandler, winners: dict):
         try:
@@ -128,7 +126,7 @@ class Server:
             agency = int(winnersAsk.split(DELIMITER)[1])
             
             winnersResponse = DELIMITER.join(winners[agency])
-            messageHandler.send_message(winnersResponse)
+            messageHandler.send_message(winnersResponse, True)
 
             logging.debug(f'action: send_winners | result: success | Agency [{agency}] Dni winners: {winnersResponse}')
 
