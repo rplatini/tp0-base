@@ -30,9 +30,6 @@ class MessageHandler():
 
         except OSError as e:
             return e
-        
-        except RuntimeError as e:
-            return e
 
     def receive_message(self) -> (bool, str):
         try:

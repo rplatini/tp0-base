@@ -40,11 +40,12 @@ class Server:
             self._client_connections[messageHandler.get_address()] = messageHandler
 
             self.__spawn_process(self.__handle_client_connection, (messageHandler,))
-            self.__join_finished_processes()
 
             if len(self._client_connections) == AGENCIES:
                 self.__start_lottery()
                 self.__close_client_connections()
+                self.__join_finished_processes()
+    
     
     def __spawn_process(self, target, args):
         """
